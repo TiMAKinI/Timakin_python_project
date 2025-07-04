@@ -2,9 +2,11 @@ import pymysql
 from typing import List, Tuple
 import settings
 
-
 def get_mysql_connection():
-    """Создает и возвращает подключение к MySQL."""
+    """
+    Создает подключение к базе данных MySQL с использованием параметров из settings.
+    Возвращает объект подключения.
+    """
     return pymysql.connect(
         host=settings.database_mysql['host'],
         user=settings.database_mysql['user'],
@@ -14,9 +16,15 @@ def get_mysql_connection():
         cursorclass=pymysql.cursors.Cursor
     )
 
-
 def search_by_keyword(keyword: str, offset: int = 0, limit: int = 10) -> List[Tuple]:
-    """Ищет фильмы по ключевому слову (в названии)."""
+    """
+    Выполняет поиск фильмов по ключевому слову в названии.
+
+    :param keyword: Ключевое слово для поиска (часть названия фильма)
+    :param offset: Смещение (для постраничного вывода)
+    :param limit: Количество записей на странице
+    :return: Список кортежей с результатами поиска
+    """
     query = """
     SELECT title, release_year, description
     FROM film
@@ -31,9 +39,12 @@ def search_by_keyword(keyword: str, offset: int = 0, limit: int = 10) -> List[Tu
             cursor.execute(query, params)
             return cursor.fetchall()
 
-
 def get_all_genres() -> List[str]:
-    """Возвращает список всех жанров."""
+    """
+    Получает список всех доступных жанров из таблицы category.
+
+    :return: Список строк с названиями жанров
+    """
     query = "SELECT name FROM category ORDER BY name"
 
     with get_mysql_connection() as conn:
@@ -41,9 +52,12 @@ def get_all_genres() -> List[str]:
             cursor.execute(query)
             return [row[0] for row in cursor.fetchall()]
 
-
 def get_min_max_years() -> Tuple[int, int]:
-    """Возвращает минимальный и максимальный год выпуска фильмов."""
+    """
+    Возвращает минимальный и максимальный год выпуска фильмов.
+
+    :return: Кортеж из двух чисел: (минимальный год, максимальный год)
+    """
     query = "SELECT MIN(release_year), MAX(release_year) FROM film"
 
     with get_mysql_connection() as conn:
@@ -51,9 +65,23 @@ def get_min_max_years() -> Tuple[int, int]:
             cursor.execute(query)
             return cursor.fetchone()
 
+def search_by_genre_and_year_range(
+    genre: str,
+    year_from: int,
+    year_to: int,
+    offset: int = 0,
+    limit: int = 10
+) -> List[Tuple]:
+    """
+    Выполняет поиск фильмов по жанру и диапазону годов выпуска.
 
-def search_by_genre_and_year_range(genre: str, year_from: int, year_to: int, offset: int = 0, limit: int = 10) -> List[Tuple]:
-    """Ищет фильмы по жанру и диапазону годов."""
+    :param genre: Название жанра (например, 'Comedy')
+    :param year_from: Начальный год
+    :param year_to: Конечный год
+    :param offset: Смещение (для постраничного вывода)
+    :param limit: Количество записей на странице
+    :return: Список кортежей с результатами поиска
+    """
     query = """
     SELECT f.title, f.release_year, f.description
     FROM film f
@@ -69,3 +97,4 @@ def search_by_genre_and_year_range(genre: str, year_from: int, year_to: int, off
         with conn.cursor() as cursor:
             cursor.execute(query, params)
             return cursor.fetchall()
+
